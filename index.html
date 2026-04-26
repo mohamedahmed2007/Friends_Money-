@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Friends Money - متتبع الديون الذكي</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+</head>
+<body>
+
+    <!-- تأثير العملات المتساقطة -->
+    <div class="coins-rain" id="coinsRain"></div>
+
+    <!-- شريط حالة الاتصال -->
+    <div class="offline-bar" id="offlineBar" style="display:none;">📴 أنت غير متصل حاليًا - سيتم المزامنة لاحقًا</div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="logo">
+            <span class="icon">🪙</span>
+            <span>Friends Money</span>
+        </div>
+        <nav>
+            <button data-page="dashboard" class="active"><span class="nav-icon">📊</span> <span>الرئيسية</span></button>
+            <button data-page="friends"><span class="nav-icon">👥</span> <span>الأصدقاء</span></button>
+            <button data-page="add-debt"><span class="nav-icon">💸</span> <span>إضافة دين</span></button>
+            <button data-page="split"><span class="nav-icon">🧾</span> <span>تقسيم فاتورة</span></button>
+            <button data-page="scan"><span class="nav-icon">📸</span> <span>تصوير فاتورة</span></button>
+            <button data-page="groups"><span class="nav-icon">👨‍👩‍👦</span> <span>المجموعات</span></button>
+            <button data-page="ranking"><span class="nav-icon">🏆</span> <span>التصنيف</span></button>
+            <button data-page="history"><span class="nav-icon">📋</span> <span>السجل</span></button>
+            <button data-page="stats"><span class="nav-icon">📈</span> <span>الإحصائيات</span></button>
+        </nav>
+        <div class="bottom-actions">
+            <button id="darkToggle"><span class="nav-icon">🌙</span> <span>الوضع المظلم</span></button>
+            <button id="exportPdfBtn"><span class="nav-icon">📄</span> <span>تصدير PDF</span></button>
+            <button id="shareBtn"><span class="nav-icon">🔗</span> <span>مشاركة</span></button>
+            <div class="contact-info">
+                <span class="nav-icon">📞</span> <span>01116604156</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="main" id="mainContent">
+
+        <!-- Dashboard -->
+        <section class="page active" id="page-dashboard">
+            <h2>📊 لوحة التحكم</h2>
+            <div class="cards-grid" id="dashboardCards"></div>
+            <div class="card" style="margin-top:12px;">
+                <h3>⚡ اقتراح تسوية ذكي (أقل عدد تحويلات)</h3>
+                <p class="subtitle" id="settlementSuggestion">حمّل البيانات لتظهر الاقتراحات...</p>
+                <div id="minimalTransfers"></div>
+                <button class="btn btn-outline btn-sm" onclick="navigateTo('add-debt')">➕ إضافة عملية جديدة</button>
+            </div>
+            <div class="card" style="margin-top:12px;">
+                <h3>📋 تنبيهات الديون المتأخرة</h3>
+                <div id="overdueAlerts" style="max-height:200px;overflow-y:auto;"></div>
+            </div>
+            <div class="card" style="margin-top:12px;">
+                <h3>📋 آخر العمليات</h3>
+                <div id="recentTransactions" style="max-height:250px;overflow-y:auto;"></div>
+            </div>
+        </section>
+
+        <!-- الأصدقاء -->
+        <section class="page" id="page-friends">
+            <h2>👥 الأصدقاء</h2>
+            <button class="btn btn-primary" onclick="openFriendModal()">➕ إضافة صديق</button>
+            <div style="margin-top:8px;">
+                <input type="text" id="friendSearch" placeholder="🔍 بحث عن صديق..." oninput="renderFriendsList()" style="max-width:300px;">
+            </div>
+            <div id="friendsList" style="margin-top:16px;"></div>
+        </section>
+
+        <!-- إضافة دين -->
+        <section class="page" id="page-add-debt">
+            <h2>💸 تسجيل دين جديد</h2>
+            <div class="card" style="max-width:550px;">
+                <div class="form-group">
+                    <label>👤 اللي دفع</label>
+                    <input type="text" id="debtPaidByName" placeholder="اكتب اسم اللي دفع..." autocomplete="off">
+                    <div class="autocomplete-dropdown" id="paidByDropdown"></div>
+                    <input type="hidden" id="debtPaidBy">
+                </div>
+                <div class="form-group">
+                    <label>👤 اللي عليه الدين</label>
+                    <input type="text" id="debtOwedByName" placeholder="اكتب اسم اللي عليه..." autocomplete="off">
+                    <div class="autocomplete-dropdown" id="owedByDropdown"></div>
+                    <input type="hidden" id="debtOwedBy">
+                </div>
+                <div class="form-group"><label>💰 المبلغ</label><input type="number" id="debtAmount" placeholder="مثال: 150" min="1" step="0.01"></div>
+                <div class="form-group"><label>📝 السبب</label>
+                    <div class="chip-row" id="reasonChips">
+                        <span class="chip" data-reason="قهوة">☕ قهوة</span>
+                        <span class="chip" data-reason="أكل">🍔 أكل</span>
+                        <span class="chip" data-reason="رحلة">✈️ رحلة</span>
+                        <span class="chip" data-reason="فواتير">🧾 فواتير</span>
+                        <span class="chip" data-reason="تسوق">🛒 تسوق</span>
+                        <span class="chip" data-reason="غير ذلك">📌 غير ذلك</span>
+                    </div>
+                    <input type="text" id="debtReasonOther" placeholder="سبب آخر (اختياري)" style="margin-top:8px;" maxlength="30">
+                </div>
+                <div class="form-group">
+                    <label>📍 المكان (اختياري)</label>
+                    <input type="text" id="debtLocation" placeholder="مثال: كافيه النجوم - مطعم البيتزا" maxlength="50">
+                </div>
+                <div class="form-group">
+                    <label>⏱️ مدة السماح (أيام) - اختياري</label>
+                    <input type="number" id="debtDueDays" placeholder="مثال: 7" min="0" step="1" value="0">
+                </div>
+                <div class="form-group">
+                    <label>💸 نسبة غرامة التأخير (%) - اختياري 😄</label>
+                    <input type="number" id="debtPenalty" placeholder="مثال: 5" min="0" max="100" step="0.5" value="0">
+                </div>
+                <button class="btn btn-primary" onclick="addDebt()">💾 تسجيل الدين</button>
+            </div>
+            <div id="debtHistory" class="card" style="margin-top:20px; max-width:550px;">
+                <h3>📋 الديون الحالية</h3>
+                <div id="debtList"></div>
+            </div>
+        </section>
+
+        <!-- تقسيم فاتورة -->
+        <section class="page" id="page-split">
+            <h2>🧾 تقسيم فاتورة</h2>
+            <div class="card" style="max-width:550px;">
+                <div class="form-group"><label>💰 إجمالي الفاتورة</label><input type="number" id="splitTotal" placeholder="300" min="1"></div>
+                <div class="form-group">
+                    <label>👥 الأشخاص</label>
+                    <div id="splitMembersCheckboxes"></div>
+                    <button class="btn btn-sm btn-outline" style="margin-top:6px;" onclick="selectAllSplitMembers()">تحديد الكل</button>
+                </div>
+                <div class="form-group">
+                    <label>👤 الشخص اللي دفع</label>
+                    <input type="text" id="splitPaidByName" placeholder="اكتب اسم اللي دفع..." autocomplete="off">
+                    <div class="autocomplete-dropdown" id="splitPaidByDropdown"></div>
+                    <input type="hidden" id="splitPaidBy">
+                </div>
+                <div class="form-group"><label>📍 المكان (اختياري)</label><input type="text" id="splitLocation" placeholder="مثال: مطعم البيتزا" maxlength="50"></div>
+                <button class="btn btn-primary" onclick="splitBillSmart()">🧮 تقسيم ذكي</button>
+                <p style="margin-top:12px; color:var(--text3);" id="splitPreview"></p>
+                <div id="smartSplitResult" style="margin-top:10px;"></div>
+            </div>
+        </section>
+
+        <!-- تصوير فاتورة -->
+        <section class="page" id="page-scan">
+            <h2>📸 تصوير فاتورة (OCR)</h2>
+            <div class="card" style="max-width:550px; text-align:center;">
+                <div class="upload-area" id="uploadArea" onclick="document.getElementById('receiptInput').click()">
+                    <div class="upload-icon">📷</div>
+                    <p>اضغط هنا لتصوير الفاتورة أو رفع صورة</p>
+                    <p class="text-sm">يتم استخراج المبلغ تلقائياً</p>
+                </div>
+                <input type="file" id="receiptInput" accept="image/*" capture="environment" style="display:none;" onchange="handleReceiptUpload(event)">
+                <div id="ocrResult" style="margin-top:16px;"></div>
+                <div class="form-group" style="margin-top:12px;">
+                    <label>👥 عدد الأشخاص للتقسيم</label>
+                    <input type="number" id="scanSplitCount" placeholder="مثال: 3" min="2" value="2">
+                </div>
+                <button class="btn btn-primary" onclick="splitScannedBill()" id="splitScannedBtn" disabled>🧮 تقسيم تلقائي</button>
+            </div>
+        </section>
+
+        <!-- المجموعات -->
+        <section class="page" id="page-groups">
+            <h2>👨‍👩‍👦 المجموعات</h2>
+            <button class="btn btn-primary" onclick="openGroupModal()">➕ إنشاء مجموعة</button>
+            <div id="groupsList" style="margin-top:16px;"></div>
+            <div id="groupChatContainer" style="display:none; margin-top:20px;"></div>
+        </section>
+
+        <!-- التصنيف -->
+        <section class="page" id="page-ranking">
+            <h2>🏆 تصنيف الأصدقاء</h2>
+            <div class="cards-grid" id="rankingCards"></div>
+            <div class="card" style="margin-top:12px;">
+                <h3>🥇 ترتيب "أحسن واحد بيسدد"</h3>
+                <div id="bestPayerRanking"></div>
+            </div>
+            <div class="card" style="margin-top:12px;">
+                <h3>📉 ترتيب "أكثر واحد مديون"</h3>
+                <div id="mostOwedRanking"></div>
+            </div>
+            <div class="card" style="margin-top:12px;">
+                <h3>🤖 تحليل سلوك الدفع</h3>
+                <div id="behaviorAnalysis"></div>
+            </div>
+        </section>
+
+        <!-- السجل -->
+        <section class="page" id="page-history">
+            <h2>📋 سجل العمليات</h2>
+            <input type="text" id="historySearch" placeholder="🔍 بحث في السجل..." oninput="renderFullHistory()" style="max-width:300px;margin-bottom:12px;">
+            <div id="fullHistoryList"></div>
+        </section>
+
+        <!-- الإحصائيات -->
+        <section class="page" id="page-stats">
+            <h2>📈 الإحصائيات والتقارير</h2>
+            <div class="card">
+                <h3>📊 رسم بياني للديون</h3>
+                <div id="statsChart"></div>
+            </div>
+            <div class="card" style="margin-top:12px;">
+                <h3>📅 تقرير شهري</h3>
+                <select id="statsMonth" onchange="renderStats()">
+                    <option value="all">كل الوقت</option>
+                </select>
+                <div id="monthlyReport" style="margin-top:10px;"></div>
+            </div>
+            <div class="card" style="margin-top:12px;">
+                <h3>⭐ تقييم الثقة (Trust Score)</h3>
+                <div id="trustScores"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- حاوية الإشعارات -->
+    <div class="toast-container" id="toastContainer"></div>
+    <!-- حاوية النوافذ المنبثقة -->
+    <div id="modalContainer"></div>
+    <!-- صوت العملات (اختياري، يمكن استبداله بملف صوتي) -->
+    <audio id="cashSound" preload="auto" style="display:none;"></audio>
+
+    <script src="script.js" defer></script>
+</body>
+</html>
